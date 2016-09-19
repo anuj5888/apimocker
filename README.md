@@ -37,10 +37,10 @@ When the proxy option is set, any requests to apimocker with URLs that are not c
 
 ### With Grunt or Gulp
 If you're using Grunt for your project, there's a grunt plugin you can use to start up apimocker:
-[https://github.com/gstroup/grunt-apimocker]()
+https://github.com/gstroup/grunt-apimocker
 
 For Gulp, there's also a plugin contributed by kent-wu:
-[https://github.com/kent-wu/gulp-apimocker]()
+https://github.com/kent-wu/gulp-apimocker
 
 ### Windows note
 After installing from npm, you'll need to edit this file:
@@ -69,10 +69,11 @@ See the sample config.json file in this package.
 * config.json file format has changed with the 0.1.6 release.  See below for the new format.  (Old config.json file format is deprecated and doesn't support new features, but still functioning.)
 * mockDirectory value can include tilde (~) for user's home directory.
 * A static route can be opened up to serve up static assets like images.  Both staticDirectory and staticPath must be set.  If either is not set, then nothing happens.
-* Additional headers can be defined for responses.
+* Additional headers can be defined for responses, in the `headers` object.  Different headers could be returned for different requests, by enabling a switch.
 * Request headers can be logged, with the `logRequestHeaders` setting.
 * Alternate URL paths can be specified with the `alternatePaths` setting.
 * With the `enableTemplate` setting, values from the request can be inserted into the mock response.
+* With the `templateSwitch` setting, parameter names and values from the request can be mapped and inserted into the mock response, including POST requests and powerful JSONPath parameter substitution into a JSON POST BODY.
 
 ```js
 {
@@ -153,7 +154,7 @@ See the sample config.json file in this package.
     "template/:Name/:Number" :{
       "mockFile": "templateSample.json",
       "verbs":["get"],
-      "enableTemplate": true
+      "enableTemplate": true,
       "contentType":"application/json"
     }
   }
@@ -165,7 +166,7 @@ For instance, a GET request sent to "http://server:port/first" will return the k
 If you'd like to return different responses for a single URL with different HTTP verbs ("get", "post", etc) then you'll need to add the "responses" object.  See above for the "second" service.  The "responses" object should contain keys for the HTTP verbs, and values describing the response for each verb.
 
 ### Switch response based on request parameter
-In your configuration, you can set up a "switch" parameter for each service.  If set, apimocker will check the request for this parameter, and return a different file based on the value.  (Apimocker will check the request for the parmater in this order: first request body, second query string, third request headers.)  For instance, if you set up a switch as seen above for "nested/ace", then you can will get different responses based on the request sent to apimocker.  A JSON POST request to the URL "http://localhost:7878/nested/ace" with this data:
+In your configuration, you can set up a "switch" parameter for each service.  If set, apimocker will check the request for this parameter, and return a different file based on the value.  (Apimocker will check the request for the parameter in this order: first request body, second query string, third request headers.)  For instance, if you set up a switch as seen above for "nested/ace", then you will get different responses based on the request sent to apimocker.  A JSON POST request to the URL "http://localhost:7878/nested/ace" with this data:
 ```js
 {
   "customerId": 1234
@@ -256,8 +257,8 @@ config.json
 templateSample.json
 ```js
 {
-  "Name": "@Name"
-  "Number": @Number
+  "Name": "@Name",
+  "Number": "@Number"
 }   
 ```
 
@@ -266,6 +267,83 @@ When you call /John/12345 you will be returned:
 {
 	"Name": "John"
 	"Number": 12345
+}
+```
+
+### TemplateSwitch your JSON
+The `templateSwitch` setting uses the same structure as the `switch` setting and similar but more flexible than the `enableTemplate` feature in order to map parameter names and values from the request  into the mock response. GET and POST requests are supported including  powerful JSONPath parameter substitution even substitution into a JSON POST BODY. All you need to do is add the templateSwitch section, specify a content type for the template file, and have a matching @ in the template file.
+
+Here are two templateSwitch examples showing the flexibility of the templateSwitch syntax. The example JSON mock template is the same format as the enableTemplate using @ variable name substitution.
+
+config.json with full switch attributes:
+```js
+    "referral" : {
+      "mockFile": "referral_error.json",
+      "verbs": ["post"],
+      "templateSwitch": [{"key": "partnerUserId",
+                         "switch": "$.data.partner_user_id",
+                         "type": "default"},
+                         {"key": "affiliateKey",
+                          "switch": "$.data.affiliate_key",
+                          "type": "default"},
+                         {"key": "email",
+                          "switch": "$.data.contact_details.email",
+                          "type": "default"},
+                         {"key": "phone",
+                          "switch": "$.data.contact_details.phone_number",
+                          "type": "default"}],
+      "contentType": "application/json",
+      "responses": {
+        "post": {"httpStatus": 200, "mockFile": "referral_success.json"}
+      }
+    },
+```
+
+config.json using key == switch, and type as default:
+```js
+    "partner-join" : {
+        "mockFile": "ijd_partner_smartbanner.html",
+        "verbs":["get"],
+        "templateSwitch": ["partner_user_id",
+                           "affiliate_key",
+                           "referral_id",
+                           "email",
+                           "phone"],
+        "contentType":"text/html"
+    },
+```
+
+with referral_success.json:
+```js
+{
+    "data" : {
+      "referral_id": "21EC2020-3AEA-4069-A2DD-08002B30309D",
+      "download_url" : "http://localhost:7878/app-download?affiliate_key=@affiliateKey&partner_user_id=@partnerUserId&referral_id=21EC2020-3AEA-4069-A2DD-08002B30309D&email=@email&phone=@phone"
+    }
+}
+```
+
+When you POST to /referral with a JSON POST body of:
+```js
+   {
+       "data": {
+           { "partner_user_id": "123456789",
+             "affiliate_key": "ABCDEFG12345",
+             "contact_details": {
+                 "email": "test@apimocker.com",
+                 "phone": "800-555-1212"
+             }
+       }
+   }
+```
+
+You will be returned the referral_success.json with the post body parameters inserted as follows:
+```js
+{
+    "data" : {
+      "referral_id": "21EC2020-3AEA-4069-A2DD-08002B30309D",
+      "download_url" : "http://localhost:7878/app-download?affiliate_key=ABCDEFG12345&partner_user_id=123456789&referral_id=21EC2020-3AEA-4069-A2DD-08002B30309D&email=test%40apimocker.com&phone=800-555-1212"
+    }
 }
 ```
 
@@ -306,6 +384,12 @@ localhost:7878/admin/setMock?verb=get&serviceUrl=second&mockFile=ace.json
 If the config.json file is edited, you can send an http request to /admin/reload to pick up the changes.
 
 ## Versions
+#### 0.4.15
+Improved templating, with the templateSwitch option.  Thanks @ferrerod !
+#### 0.4.14
+Upgrade version of express-http-proxy.  (Fix for issue #48.) Thanks @pgraham !
+#### 0.4.12
+Allow PATCH method in CORS middleware.  (Fix for issue #54.)  Also fixed some flaky tests.
 #### 0.4.11
 Added template feature, to insert values from request into the mock response.  Thanks @Samurai336 !
 #### 0.4.10
@@ -351,6 +435,7 @@ New config file format was introduced, allowing for custom content-types and mor
 
 ## Contributors
 Run "grunt watch" in the root "apimocker" directory to start the grunt watch task.  This will run JSHint and mocha tests.
+All Pull Requests must include at least one test.
 
 ## Acknowledgements
 Big thanks to magalhas for his httpd-mock project.  This gave me a great starting point.

@@ -1,7 +1,7 @@
 {
   "name": "apimocker",
   "description": "Simple HTTP server that returns mock service API responses to your front end.",
-  "version": "0.4.11",
+  "version": "0.4.15",
   "engines": {
     "node": ">=0.10.0"
   },
@@ -11,19 +11,20 @@
     "body-parser": "~1.4.3",
     "commander": ">=1",
     "express": "~4.5",
-    "express-http-proxy": "0.6.0",
+    "express-http-proxy": ">=0.7.0",
     "express-xml-bodyparser": "^0.2.2",
     "underscore": ">=1",
     "untildify": "^2.0.0"
   },
   "devDependencies": {
-    "mocha": ">=1.8.2",
-    "grunt": "~0.4.0",
-    "grunt-mocha-cli": "1.3.0",
-    "grunt-contrib-watch": ">=0.3.1",
-    "grunt-contrib-jshint": "~0.7.1",
     "chai": ">=1.5.0",
-    "sinon": ">=1.6.0"
+    "grunt": "^1.0.0",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-watch": ">=0.3.1",
+    "grunt-mocha-cli": "^2.1.0",
+    "mocha": ">=1.8.2",
+    "sinon": ">=1.6.0",
+    "supertest": "^1.2.0"
   },
   "main": "./lib/apimocker.js",
   "bin": {

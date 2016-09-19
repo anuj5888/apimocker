@@ -5,6 +5,7 @@
   "latency": 0,
   "allowedDomains": ["abc"],
   "allowedHeaders": ["Content-Type", "my-custom-header"],
+  "proxyURL": "http://localhost:7881",
   "webServices": {
     "first": {
       "mockFile": "king.json",
@@ -63,12 +64,38 @@
     },
     "noMockFile": {
       "verbs": ["get"]
-    }, 
+    },
     "template/:name/:number":{
-	"mockFile":"templateSample.json",
-	"enableTemplate" : true, 
-        "contentType": "application/json", 
-	"verbs": ["get"]
+      "mockFile":"templateSample.json",
+      "enableTemplate" : true,
+      "contentType": "application/json",
+      "verbs": ["get"]
+    },
+    "templateSwitchGetParams" : {
+      "mockFile": "templateSwitchSample.json",
+      "verbs":["get"],
+      "templateSwitch": ["appID",
+                         "appName",
+                         "userName",
+                         "userAge"],
+      "contentType": "application/json"
+    },
+    "templateSwitchPostJsonPath" : {
+      "mockFile": "templateSwitchSample.json",
+      "verbs": ["post"],
+      "templateSwitch": [{"key": "appID",
+                         "switch": "$.data.appID",
+                         "type": "jsonpath"},
+                         {"key": "appName",
+                          "switch": "$.data.appName",
+                          "type": "jsonpath"},
+                         {"key": "userName",
+                          "switch": "$.data.user.userName",
+                          "type": "jsonpath"},
+                         {"key": "userAge",
+                          "switch": "$.data.user.userAge",
+                          "type": "jsonpath"}],
+      "contentType": "application/json"
     }
   }
 }
